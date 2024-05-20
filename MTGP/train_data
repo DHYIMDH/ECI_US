@@ -1,0 +1,104 @@
+import pandas as pd
+import torch
+import gpytorch
+from torch.utils.data import DataLoader, TensorDataset, random_split
+import ast
+from gpytorch.models import ExactGP
+from gpytorch.kernels import RBFKernel, IndexKernel
+from gpytorch.distributions import MultitaskMultivariateNormal
+from gpytorch.likelihoods import MultitaskGaussianLikelihood
+
+
+df = pd.read_csv('MT_1_8.csv')
+
+
+features = torch.tensor([ast.literal_eval(observed)[:15] for observed in df['subpopulation_values']], dtype=torch.float32)
+labels = torch.tensor(df[['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8']].values, dtype=torch.float32)
+
+dataset = TensorDataset(features, labels)
+
+train_size = int(0.8 * len(dataset))
+val_size = len(dataset) - train_size
+train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
+
+train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
+val_loader = DataLoader(val_dataset, batch_size=64)
+
+
+class MTGPModel(ExactGP):
+    def __init__(self, train_x, train_y, likelihood):
+        num_tasks = train_y.shape[-1]
+        super(MTGPModel, self).__init__(train_x, train_y, likelihood)
+        
+        self.mean_module = gpytorch.means.MultitaskMean(
+            gpytorch.means.ConstantMean(), num_tasks=num_tasks
+        )
+        
+
+        self.data_covar_module = RBFKernel()
+        self.task_covar_module = IndexKernel(num_tasks=num_tasks, rank=1)
+        self.covar_module = gpytorch.kernels.MultitaskKernel(
+            self.data_covar_module, num_tasks=num_tasks, rank=1
+        )
+        
+    def forward(self, x):
+        mean_x = self.mean_module(x)
+        covar_x = self.covar_module(x)
+        return MultitaskMultivariateNormal(mean_x, covar_x)
+
+
+train_x = features[:train_size]
+train_y = labels[:train_size]
+likelihood = MultitaskGaussianLikelihood(num_tasks=8)
+model = MTGPModel(train_x, train_y, likelihood)
+
+
+def train_model(model, likelihood, num_epochs=600):
+    model.train()
+    likelihood.train()
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+    mll = gpytorch.mlls.ExactMarginalLogLikelihood(likelihood, model)
+    
+    for epoch in range(num_epochs):
+        optimizer.zero_grad()
+        output = model(train_x)
+        loss = -mll(output, train_y)
+        loss.backward()
+        optimizer.step()
+        
+        if (epoch + 1) % 50 == 0:
+            print(f'Epoch [{epoch + 1}/{num_epochs}], Loss: {loss.item():.4f}')
+
+train_model(model, likelihood)
+
+def evaluate_model(data_loader, model, likelihood):
+    model.eval()
+    likelihood.eval()
+    mse_loss = torch.nn.MSELoss()
+    total_loss = 0.0
+    count = 0
+    
+    with torch.no_grad():
+        for inputs, labels in data_loader:
+            preds = model(inputs).mean
+            loss = mse_loss(preds, labels)
+            total_loss += loss.item() * inputs.size(0)
+            count += inputs.size(0)
+    
+    return total_loss / count
+
+
+val_loss = evaluate_model(val_loader, model, likelihood)
+print(f'Validation MSE Loss: {val_loss:.4f}')
+
+
+test_df = pd.read_csv('test_data_all.csv')
+test_df['subpopulation_values'] = test_df['subpopulation_values'].apply(ast.literal_eval)
+test_features = torch.tensor(test_df['subpopulation_values'].tolist(), dtype=torch.float32)
+test_labels = torch.tensor(test_df[['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8']].values, dtype=torch.float32)
+test_dataset = TensorDataset(test_features, test_labels)
+test_loader = DataLoader(test_dataset, batch_size=64)
+
+
+test_loss = evaluate_model(test_loader, model, likelihood)
+print(f'Test MSE Loss: {test_loss:.4f}')
