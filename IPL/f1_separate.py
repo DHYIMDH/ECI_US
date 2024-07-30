@@ -13,7 +13,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import f1_score, accuracy_score
 import ast
 
-# 데이터 생성 함수들
+
 def generate_exp_sample(num_features, bernoulli_params_UZ, bernoulli_params_UX, bernoulli_params_UY, coefficients_MX, coefficients_MY, C):
     UZ_values = np.random.binomial(1, bernoulli_params_UZ, size=num_features)
     UX_value = np.random.binomial(1, bernoulli_params_UX)
@@ -306,7 +306,7 @@ def main_test_data_generation():
     df_sampled = df.sample(n=200, random_state=42)
     df_sampled.to_csv('test_data_mt.csv', index=False)
 
-# 모델 정의 및 학습 함수
+
 class SingleTaskMLP(nn.Module):
     def __init__(self):
         super(SingleTaskMLP, self).__init__()
@@ -314,7 +314,7 @@ class SingleTaskMLP(nn.Module):
         self.dropout = nn.Dropout(0.5)
         self.fc2 = nn.Linear(512, 256)
         self.fc3 = nn.Linear(256, 128)
-        self.fc4 = nn.Linear(128, 8)  # 8개의 출력값을 가지도록 변경
+        self.fc4 = nn.Linear(128, 8)  # 8개의 출력값
         for m in self.modules():
             if isinstance(m, nn.Linear):
                 nn.init.kaiming_normal_(m.weight)
