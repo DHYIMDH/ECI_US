@@ -16,7 +16,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import f1_score
 import ast
 
-# 데이터 생성 함수들 (생략, 기존 함수들 그대로 사용)
+
 
 def calculate_pns_bounds(P_yx, P_y_x_prime, P_y_prime_x_prime, P_y, P_y_and_x, P_y_prime_and_x, P_y_and_x_prime, P_y_prime_and_x_prime):
     sigma = 1
@@ -31,26 +31,16 @@ def calculate_predicted_benefit(preds):
     lower_bound, upper_bound = calculate_pns_bounds(*preds)
     return (lower_bound + upper_bound) / 2
 
-def main_data_generation():
-    # 데이터 생성 코드 (생략, 기존 함수들 그대로 사용)
-    pass
-
-def main_test_data_generation():
-    # 테스트 데이터 생성 코드 (생략, 기존 함수들 그대로 사용)
-    pass
-
-# Multi-task Gaussian Process 모델 정의
 class MTGPModel(ExactGP):
     def __init__(self, train_x, train_y, likelihood):
         num_tasks = train_y.shape[-1]
         super(MTGPModel, self).__init__(train_x, train_y, likelihood)
         
-        # 평균 모듈 정의
+
         self.mean_module = gpytorch.means.MultitaskMean(
             gpytorch.means.ConstantMean(), num_tasks=num_tasks
         )
         
-        # 커널 모듈 정의: RBF 커널과 Index 커널을 사용하여 Coregionalization 행렬 생성
         self.data_covar_module = RBFKernel()
         self.task_covar_module = IndexKernel(num_tasks=num_tasks, rank=1)
         self.covar_module = gpytorch.kernels.MultitaskKernel(
