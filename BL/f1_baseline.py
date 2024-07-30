@@ -13,7 +13,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import f1_score
 import ast
 
-# 데이터 생성 함수들
+
 def generate_exp_sample(num_features, bernoulli_params_UZ, bernoulli_params_UX, bernoulli_params_UY, coefficients_MX, coefficients_MY, C):
     UZ_values = np.random.binomial(1, bernoulli_params_UZ, size=num_features)
     UX_value = np.random.binomial(1, bernoulli_params_UX)
@@ -294,18 +294,18 @@ def main_test_data_generation():
 class MLP(nn.Module):
     def __init__(self):
         super(MLP, self).__init__()
-        self.fc1 = nn.Linear(15, 128)  # 입력 레이어: 15개의 feature
+        self.fc1 = nn.Linear(15, 128)  
         self.fc2 = nn.Linear(128, 128)  # 히든 레이어 1
         self.fc3 = nn.Linear(128, 128)  # 히든 레이어 2
         self.fc4 = nn.Linear(128, 128)  # 히든 레이어 3
-        self.fc5 = nn.Linear(128, 1)  # 출력 레이어: 1개의 출력 (benefit)
+        self.fc5 = nn.Linear(128, 1) 
 
     def forward(self, x):
         x = torch.relu(self.fc1(x))
         x = torch.relu(self.fc2(x))
         x = torch.relu(self.fc3(x))
         x = torch.relu(self.fc4(x))
-        x = torch.sigmoid(self.fc5(x))  # 출력 레이어에는 시그모이드 활성화 함수 사용
+        x = torch.sigmoid(self.fc5(x))  
         return x
 
 def train_model(model, criterion, optimizer, scheduler, num_epochs, train_loader):
@@ -325,7 +325,7 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs, train_loader
 
 
 def calculate_predicted_benefit(preds):
-    # preds는 예측된 benefit 값
+
     return preds
 
 def evaluate_model(data_loader, model):
