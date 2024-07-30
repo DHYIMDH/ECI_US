@@ -13,7 +13,6 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import f1_score
 import ast
 
-# 데이터 생성 함수들
 def generate_exp_sample(num_features, bernoulli_params_UZ, bernoulli_params_UX, bernoulli_params_UY, coefficients_MX, coefficients_MY, C):
     UZ_values = np.random.binomial(1, bernoulli_params_UZ, size=num_features)
     UX_value = np.random.binomial(1, bernoulli_params_UX)
@@ -306,7 +305,7 @@ def main_test_data_generation():
     df_sampled = df.sample(n=200, random_state=42)
     df_sampled.to_csv('test_data_mt.csv', index=False)
 
-# 모델 정의 및 학습 함수
+
 class MultiTaskMLP(nn.Module):
     def __init__(self):
         super(MultiTaskMLP, self).__init__()
@@ -349,7 +348,6 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs, train_loader
 
 
 def calculate_predicted_benefit(preds):
-    # preds는 p1부터 p8까지의 예측 값이므로 이를 사용하여 calculate_pns_bounds 호출
     lower_bound, upper_bound = calculate_pns_bounds(*preds)
     return (lower_bound + upper_bound) / 2
 
