@@ -1,0 +1,31 @@
+from causallearn.search.ConstraintBased.PC import pc
+from causallearn.utils.GraphUtils import GraphUtils
+from sklearn.preprocessing import LabelEncoder
+import pandas as pd
+from tqdm import tqdm
+
+# Load the dataset
+df = pd.read_csv("./data.csv")  # Replace with your file path
+
+# Sample a portion of the dataset first (e.g., 5% of the data)
+df_sampled = df.sample(frac=0.05, random_state=42)  # Reduce the fraction to speed up
+
+# Apply label encoding with vectorized operations
+le = LabelEncoder()
+
+# Convert categorical columns to numerical
+df_sampled = df_sampled.apply(lambda col: le.fit_transform(col) if col.dtype == 'object' else col)
+
+# Convert to numpy array for the PC algorithm
+data_sampled = df_sampled.to_numpy()
+
+# Perform causal discovery using the PC algorithm with limited depth
+print("Running PC algorithm...")
+cg = pc(data_sampled, max_cond_vars=3)  # Reduce max_cond_vars for faster computation
+
+# Print the adjacency matrix and show the graph
+print("Adjacency Matrix:")
+print(cg.G)
+
+# Visualize the causal graph
+GraphUtils.plot_graph(cg.G, labels=df_sampled.columns)
