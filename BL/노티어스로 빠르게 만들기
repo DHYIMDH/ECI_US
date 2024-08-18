@@ -1,0 +1,37 @@
+import numpy as np
+import pandas as pd
+from sklearn.preprocessing import LabelEncoder
+from causalnex.structure.notears import from_pandas
+
+# Load the dataset
+df = pd.read_csv("./data.csv")
+
+# Convert categorical columns to numeric using Label Encoding
+categorical_columns = ['예열온도', '인공결함을 위한 이상변수', 'NDE 결과(Defect)']
+
+# Initialize the label encoder
+le = LabelEncoder()
+
+# Apply label encoding to categorical columns
+for col in categorical_columns:
+    df[col] = le.fit_transform(df[col])
+
+# Run Notears algorithm
+sm = from_pandas(df)
+
+# Extract edges (causal structure)
+edges = sm.edges
+#이렇게 찾은 모든 인과관계 edge 중에 markov블랭킷에 해당하는 애들만 추리기
+# Define the target variable
+target_var = 'NDE 결과(Defect)'
+
+# Find the parents, children, and co-parents of the target variable
+parents = {source for source, target in edges if target == target_var}
+children = {target for source, target in edges if source == target_var}
+co_parents = {source for child in children for source, target in edges if target == child and source != target_var}
+
+# Markov Blanket is the union of parents, children, and co-parents
+markov_blanket = parents.union(children).union(co_parents)
+
+print("Markov Blanket of '{}':".format(target_var))
+print(markov_blanket)
