@@ -31,6 +31,8 @@ data = pd.concat([X, y], axis=1).to_numpy()
 # Perform causal discovery using the PC algorithm with max_cond_vars=3
 # We will use a delayed function to apply parallel processing
 def run_pc_algorithm_on_data(data_chunk):
+    # Ensure that the data is converted to a numpy array
+    data_chunk = np.array(data_chunk)
     cg = pc(data_chunk, max_cond_vars=3)
     return cg.G
 
