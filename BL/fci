@@ -1,0 +1,46 @@
+from causallearn.search.ConstraintBased.FCI import fci
+from causallearn.utils.GraphUtils import GraphUtils
+from sklearn.preprocessing import LabelEncoder
+import pandas as pd
+import numpy as np
+
+# Load the dataset
+df = pd.read_csv("./data.csv")
+
+# Encode categorical variables (since causal discovery requires numerical input)
+le = LabelEncoder()
+df_encoded = pd.DataFrame()
+
+for col in df.columns:
+    if df[col].dtype == 'object':
+        df_encoded[col] = le.fit_transform(df[col])
+    else:
+        df_encoded[col] = df[col]
+
+# Set the target variable
+target_col = 'NDE 결과(Defect)'
+
+# Extract features and target
+X = df_encoded.drop(columns=[target_col])
+y = df_encoded[target_col]
+
+# Combine features and target for causal discovery
+data = pd.concat([X, y], axis=1).to_numpy()
+
+# Perform causal discovery using the FCI algorithm
+cg = fci(data)
+
+# Get the adjacency matrix from the resulting PAG (Partial Ancestral Graph)
+adj_matrix = cg.G
+
+# Identify features that are causally linked to the target variable (y)
+target_index = list(df_encoded.columns).index(target_col)
+causal_features = []
+
+for i, connected in enumerate(adj_matrix[target_index]):
+    if connected != 0 and i != target_index:  # Exclude the target itself and include any type of connection
+        causal_features.append(df_encoded.columns[i])
+
+# Print the selected causal features
+print("Causal Features linked to target (NDE 결과(Defect)) using FCI:")
+print(causal_features)
