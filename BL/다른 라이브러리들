@@ -65,3 +65,35 @@ identified_estimand = model.identify_effect()
 estimate = model.estimate_effect(identified_estimand, method_name="backdoor.propensity_score_matching")
 
 print(estimate)
+
+
+
+///////////////////노티어스
+import numpy as np
+import pandas as pd
+from sklearn.preprocessing import LabelEncoder
+from causalnex.structure.notears import from_pandas
+
+# Load the dataset
+df = pd.read_csv("./data.csv")
+
+# Convert categorical columns to numeric using Label Encoding
+categorical_columns = ['예열온도', '인공결함을 위한 이상변수', 'NDE 결과(Defect)']
+
+# Initialize the label encoder
+le = LabelEncoder()
+
+# Apply label encoding to categorical columns
+for col in categorical_columns:
+    df[col] = le.fit_transform(df[col])
+
+# Now, all columns should be numeric. Run Notears algorithm
+sm = from_pandas(df)
+
+# Extract the adjacency matrix
+adj_matrix = sm.edges
+
+# Print the adjacency matrix (causal structure)
+print("Causal Structure Edges:")
+print(adj_matrix)
+
