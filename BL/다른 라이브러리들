@@ -1,0 +1,67 @@
+from pgmpy.estimators import HillClimbSearch, BicScore
+import pandas as pd
+
+# 데이터 로드
+df = pd.read_csv("data.csv")
+
+# Hill Climbing을 이용한 인과 구조 학습
+hc = HillClimbSearch(df)
+model = hc.estimate(scoring_method=BicScore(df))
+
+print(model.edges())
+
+
+/////////////////
+
+from castle.algorithms import PC
+from castle.common import GraphDAG
+import numpy as np
+
+# 데이터 로드
+data = np.loadtxt("data.csv", delimiter=",", skiprows=1)
+
+# PC 알고리즘으로 인과 구조 학습
+pc = PC()
+pc.learn(data)
+
+# 인과 그래프 출력
+GraphDAG(pc.causal_matrix)
+
+///////////////////
+
+
+from causalnex.structure import StructureModel
+from causalnex.structure.notears import from_pandas
+
+# 데이터 로드
+df = pd.read_csv("data.csv")
+
+# 인과 구조 학습 (Notears 알고리즘 사용)
+sm = from_pandas(df)
+
+# 학습된 구조 출력
+print(sm.edges())
+
+
+////////////
+
+from dowhy import CausalModel
+import pandas as pd
+
+# 데이터 로드
+df = pd.read_csv("data.csv")
+
+# 인과 모델 정의
+model = CausalModel(
+    data=df,
+    treatment="feature1",  # 인과 관계의 원인 변수
+    outcome="target"       # 인과 관계의 결과 변수
+)
+
+# 인과 관계 식별
+identified_estimand = model.identify_effect()
+
+# 인과 효과 추정
+estimate = model.estimate_effect(identified_estimand, method_name="backdoor.propensity_score_matching")
+
+print(estimate)
