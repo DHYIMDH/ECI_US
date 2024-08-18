@@ -1,0 +1,57 @@
+from causallearn.search.ConstraintBased.PC import pc
+from causallearn.utils.GraphUtils import GraphUtils
+from sklearn.preprocessing import LabelEncoder
+from joblib import Parallel, delayed
+import pandas as pd
+import numpy as np
+
+# Load the dataset
+df = pd.read_csv("./data.csv")
+
+# Encode categorical variables (since causal discovery requires numerical input)
+le = LabelEncoder()
+df_encoded = pd.DataFrame()
+
+for col in df.columns:
+    if df[col].dtype == 'object':
+        df_encoded[col] = le.fit_transform(df[col])
+    else:
+        df_encoded[col] = df[col]
+
+# Set the target variable
+target_col = 'NDE 결과(Defect)'
+
+# Extract features and target
+X = df_encoded.drop(columns=[target_col])
+y = df_encoded[target_col]
+
+# Combine features and target for causal discovery
+data = pd.concat([X, y], axis=1).to_numpy()
+
+# Perform causal discovery using the PC algorithm with max_cond_vars=3
+# We will use a delayed function to apply parallel processing
+def run_pc_algorithm_on_data(data_chunk):
+    cg = pc(data_chunk, max_cond_vars=3)
+    return cg.G
+
+# Split data into smaller chunks for parallel processing
+data_chunks = np.array_split(data, 4)  # Adjust the number of splits as needed
+
+# Run the PC algorithm in parallel on each chunk
+results = Parallel(n_jobs=-1)(delayed(run_pc_algorithm_on_data)(chunk) for chunk in data_chunks)
+
+# Combine results (this part will depend on how you want to merge adjacency matrices)
+# For simplicity, assume we're just interested in the first result here:
+adj_matrix = results[0]  # This is just one of the results for demonstration purposes
+
+# Identify features that are causally linked to the target variable (y)
+target_index = list(df_encoded.columns).index(target_col)
+causal_features = []
+
+for i, connected in enumerate(adj_matrix[target_index]):
+    if connected == 1 and i != target_index:  # Exclude the target itself
+        causal_features.append(df_encoded.columns[i])
+
+# Print the selected causal features
+print("Causal Features linked to target (NDE 결과(Defect)):")
+print(causal_features)
